@@ -35,7 +35,11 @@ import com.example.randomepisoder.databinding.FragmentMainBinding;
  * To do:
  *      Decide on a good time to save to file instead of every time a episode is randomized
  *      figure out the jank between futurama and simpsons history
- *          Not properly saving the history for the unfocused category
+ *          Saving seems to work correctly now but Futurama side seems to
+ *          double up the history list
+ *
+ *          Quickly clicking the history button can cause app to freeze/softlock
+ *          where you can't touch the screen to leave the history page
  */
 public class PlaceholderFragment extends Fragment {
     //List of episodes for each simpsons season
@@ -78,6 +82,7 @@ public class PlaceholderFragment extends Fragment {
         }
         pageViewModel.setIndex(index);
 
+
         //Code for creating a file to store history of results
         //Simpsons history
         file = new File(getActivity().getFilesDir(), SIMPSONS_HISTORY_FILE);
@@ -103,9 +108,6 @@ public class PlaceholderFragment extends Fragment {
             }
             System.out.println("It does not exists...");
         }
-
-        file = null;
-        scan = null;
 
         //Futurama history
         file = new File(getActivity().getFilesDir(), FUTURAMA_HISTORY_FILE);
@@ -194,14 +196,14 @@ public class PlaceholderFragment extends Fragment {
                 if(tempHistory_S.size() > MAX_INPUT_LINES) {    //Do not exceed the max allowable lines of history
                     tempHistory_S.removeLast();
                 }
-                updateHistory();
+                updateHistory(ARG_SECTION_NUMBER);
             } else {
                 result = "F (" + dateFormatter.format(date) + ") Season: " + season + ", Episode: " + episode + '\n';
                 tempHistory_F.add(0, result);
                 if(tempHistory_F.size() > MAX_INPUT_LINES) {    //Do not exceed the max allowable lines of history
                     tempHistory_F.removeLast();
                 }
-                updateHistory();
+                updateHistory(ARG_SECTION_NUMBER);
             }
 
             //When a change in mEpisode is observed, update text on screen
@@ -258,30 +260,34 @@ public class PlaceholderFragment extends Fragment {
 
     //Method to update the history
     //For some reason as a private method it still works inside public methods
-    private void updateHistory() {
+    private void updateHistory(String section) {
         OutputStreamWriter toFileS;
         OutputStreamWriter toFileF;
-        try {
-            toFileS = new OutputStreamWriter(getContext().openFileOutput(SIMPSONS_HISTORY_FILE, Context.MODE_PRIVATE));
-            //Write the history to file
-            for(String i : tempHistory_S) {
-                toFileS.append(i);
-            }
-            System.out.println(SIMPSONS_HISTORY_FILE + " saved");
-            toFileS.close();
-        } catch(Exception e) {
-            System.err.println("Write to " + SIMPSONS_HISTORY_FILE + " failed.");
-        }
 
-        try {
-            toFileF = new OutputStreamWriter(getContext().openFileOutput(FUTURAMA_HISTORY_FILE, Context.MODE_PRIVATE));
-            for(String i : tempHistory_F) {
-                toFileF.append(i);
+        //Update only the simpsons history when on the simpsons tab and only the futurama history on the futurama tab
+        if (getArguments().getInt(section) < 2) {
+            try {
+                toFileS = new OutputStreamWriter(getContext().openFileOutput(SIMPSONS_HISTORY_FILE, Context.MODE_PRIVATE));
+                //Write the history to file
+                for (String i : tempHistory_S) {
+                    toFileS.append(i);
+                }
+                System.out.println(SIMPSONS_HISTORY_FILE + " saved");
+                toFileS.close();
+            } catch (Exception e) {
+                System.err.println("Write to " + SIMPSONS_HISTORY_FILE + " failed.");
             }
-            System.out.println(FUTURAMA_HISTORY_FILE + " saved");
-            toFileF.close();
-        } catch (Exception e) {
-            System.err.println("Write to " + FUTURAMA_HISTORY_FILE + " failed.");
+        } else {
+            try {
+                toFileF = new OutputStreamWriter(getContext().openFileOutput(FUTURAMA_HISTORY_FILE, Context.MODE_PRIVATE));
+                for (String i : tempHistory_F) {
+                    toFileF.append(i);
+                }
+                System.out.println(FUTURAMA_HISTORY_FILE + " saved");
+                toFileF.close();
+            } catch (Exception e) {
+                System.err.println("Write to " + FUTURAMA_HISTORY_FILE + " failed.");
+            }
         }
     }
 }
